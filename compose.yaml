@@ -1,0 +1,23 @@
+services:
+  zenmood:
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-v1.4.7}
+    image: zenmood:local
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      API_KEY: ${API_KEY:?Set API_KEY in .env}
+      PORT: ${PORT:-8080}
+    ports:
+      - "${PORT:-8080}:${PORT:-8080}/tcp"
+    volumes:
+      - zenmood-data:/data
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+
+volumes:
+  zenmood-data:
