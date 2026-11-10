@@ -1,10 +1,19 @@
+# ---- Build stage: compile from the fork (WARP MTU option) ----
+FROM golang:1.24-alpine AS build
+ARG REPO=https://github.com/johndoe237/opencode2api.git
+ARG REF=feat/warp-mtu
+RUN apk add --no-cache git
+WORKDIR /src
+RUN git clone --depth 1 --branch "$REF" "$REPO" . \
+    && git rev-parse HEAD \
+    && CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /out/opencode2api ./cmd/opencode2api
+
+# ---- Runtime stage ----
 FROM alpine:3.22
 
-ARG VERSION=v1.4.7
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
-
-RUN apk add --no-cache ca-certificates curl jq su-exec tzdata \
+RUN apk add --no-cache \
+        ca-certificates curl jq su-exec tzdata \
+        iproute2 iputils iptables ip6tables bind-tools busybox-extras \
     && addgroup -S zenmood \
     && adduser -S -G zenmood -h /data zenmood \
     && mkdir -p /app /data \
@@ -12,20 +21,7 @@ RUN apk add --no-cache ca-certificates curl jq su-exec tzdata \
 
 WORKDIR /app
 
-RUN set -eux; \
-    case "$TARGETOS/$TARGETARCH" in \
-      linux/amd64|linux/arm64) ;; \
-      *) echo "Unsupported release target: $TARGETOS/$TARGETARCH" >&2; exit 1 ;; \
-    esac; \
-    archive="opencode2api_${VERSION}_${TARGETOS}_${TARGETARCH}.tar.gz"; \
-    base="https://github.com/jasonxu114514/opencode2api/releases/download/${VERSION}"; \
-    mkdir -p /tmp/release; \
-    curl -fsSL "$base/$archive" -o "/tmp/release/$archive"; \
-    curl -fsSL "$base/$archive.sha256" -o "/tmp/release/$archive.sha256"; \
-    (cd /tmp/release && sha256sum -c "$archive.sha256"); \
-    tar -xzf "/tmp/release/$archive" -C /tmp/release; \
-    install -m 0755 "/tmp/release/opencode2api_${VERSION}_${TARGETOS}_${TARGETARCH}/opencode2api" /usr/local/bin/opencode2api; \
-    rm -rf /tmp/release
+COPY --from=build /out/opencode2api /usr/local/bin/opencode2api
 
 COPY config.json /app/config.template.json
 COPY --chmod=0755 entrypoint.sh /usr/local/bin/entrypoint.sh

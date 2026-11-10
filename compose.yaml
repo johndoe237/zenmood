@@ -3,7 +3,8 @@ services:
     build:
       context: .
       args:
-        VERSION: ${VERSION:-v1.4.7}
+        REPO: ${REPO:-https://github.com/johndoe237/opencode2api.git}
+        REF: ${REF:-feat/warp-mtu}
     image: zenmood:local
     restart: unless-stopped
     read_only: true
