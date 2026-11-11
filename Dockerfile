@@ -2,11 +2,15 @@
 FROM golang:1.24-alpine AS build
 ARG REPO=https://github.com/johndoe237/opencode2api.git
 ARG REF=feat/warp-mtu
+# Change this value to force Docker/Railway to re-clone the fork (cache busting).
+ARG GIT_SHA=3246e10
 RUN apk add --no-cache git
 WORKDIR /src
-RUN git clone --depth 1 --branch "$REF" "$REPO" . \
+RUN echo "expected fork commit: $GIT_SHA" \
+    && git clone --depth 1 --branch "$REF" "$REPO" . \
     && git rev-parse HEAD \
-    && CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /out/opencode2api ./cmd/opencode2api
+    && CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /out/opencode2api ./cmd/opencode2api \
+    && if [ -d cmd/warpdiag ]; then CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /out/warpdiag ./cmd/warpdiag; fi
 
 # ---- Runtime stage ----
 FROM alpine:3.22
@@ -21,7 +25,7 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-COPY --from=build /out/opencode2api /usr/local/bin/opencode2api
+COPY --from=build /out/ /usr/local/bin/
 
 COPY config.json /app/config.template.json
 COPY --chmod=0755 entrypoint.sh /usr/local/bin/entrypoint.sh

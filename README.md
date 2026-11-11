@@ -57,3 +57,11 @@ everything works.
 
 The container intentionally does not request `NET_ADMIN`, create a TUN device,
 or change host routes.
+
+## Decisive WARP diagnostic
+
+Set `WARP_DIAG=1` in Railway Variables (optionally `WARP_DIAG_TIMEOUT=300s`) and redeploy.
+Before starting the app, the entrypoint runs `warpdiag` (built from `cmd/warpdiag` in the
+fork) and prints a report between `===== WARPDIAG START =====` and `===== WARPDIAG END =====`.
+The diagnostic runs once per volume (marker `/data/.warpdiag_done`); use `WARP_DIAG=force` to run it again.
+Remove the variable afterwards.

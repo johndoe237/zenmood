@@ -80,4 +80,20 @@ if [ "${WARP_NETWORK_DIAGNOSTICS:-1}" = "1" ]; then
     echo "========== END NETWORK DIAGNOSTICS =========="
 fi
 
+# Diagnostic décisif WARP : définir WARP_DIAG=1 dans les variables Railway.
+# Lance le binaire warpdiag (fork), affiche son rapport, puis démarre l'app normalement.
+# Une seule exécution par volume (évite de re-enregistrer un compte WARP à chaque redémarrage).
+# WARP_DIAG=force relance le diagnostic même s'il a déjà été exécuté.
+diag_marker="$state_dir/.warpdiag_done"
+if { [ "${WARP_DIAG:-0}" = "1" ] && [ ! -e "$diag_marker" ]; } || [ "${WARP_DIAG:-0}" = "force" ]; then
+    if [ -x /usr/local/bin/warpdiag ]; then
+        echo "===== WARPDIAG START ====="
+        su-exec zenmood:zenmood /usr/local/bin/warpdiag -config "$config_path" -timeout "${WARP_DIAG_TIMEOUT:-300s}" 2>&1 || echo "warpdiag exited with status $?"
+        echo "===== WARPDIAG END ====="
+        touch "$diag_marker" || true
+    else
+        echo "WARP_DIAG=1 mais /usr/local/bin/warpdiag est absent (cmd/warpdiag manquant dans le fork)"
+    fi
+fi
+
 exec su-exec zenmood:zenmood /usr/local/bin/opencode2api -config "$config_path"
