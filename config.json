@@ -6,10 +6,12 @@
   "anonymous": true,
   "warp": {
     "enabled": true,
-    "pool_size": 4,
+    "pool_size": 8,
     "stack": "ipv6",
     "mtu": 1280,
     "tcp_mss": 1160,
+    "endpoint_port": 0,
+    "init_timeout_seconds": 0,
     "source_ipv6": ""
   },
   "proxies": [
@@ -22,7 +24,7 @@
     "anonymous": "https://opencode.ai/inference"
   },
   "retry": {
-    "max_attempts": 3,
+    "max_attempts": 5,
     "timeout_seconds": 300
   },
   "models": {
@@ -40,7 +42,7 @@
     "failure_cooldown_seconds": 15,
     "attempt_timeout_seconds": 0,
     "first_event_timeout_seconds": 0,
-    "max_anonymous_exits": 8,
+    "max_anonymous_exits": 16,
     "free_tier_block_seconds": 900
   },
   "logging": {
