@@ -7,7 +7,7 @@
   "warp": {
     "enabled": true,
     "pool_size": 1,
-    "stack": "ipv6",
+    "stack": "ipv4",
     "mtu": 1200,
     "source_ipv6": ""
   },
