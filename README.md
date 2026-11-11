@@ -34,26 +34,25 @@ curl -fsS https://your-domain.example/v1/models \
 Main endpoints: `GET /v1/models`, `POST /v1/chat/completions`, `POST /v1/responses`, and `POST /v1/messages`. The unauthenticated health endpoint is `GET /healthz`.
 
 
-## Railway / WARP MTU
+## Railway / WARP over IPv6 (MTU + TCP MSS clamp)
 
-This image is built from a fork of opencode2api that adds a `warp.mtu` option
-(branch `feat/warp-mtu`, set by the `REPO` / `REF` build args in the Dockerfile).
+This image is built from a fork of opencode2api (branch `feat/warp-mtu`, `REPO` / `REF` /
+`GIT_SHA` build args in the Dockerfile) that adds `warp.mtu`, `warp.tcp_mss`,
+`warp.endpoint_port` and `warp.init_timeout_seconds`.
 
-Railway's container network has an MTU of 1316 (measured path MTU: 1300-byte
-packets pass, 1328-byte packets fail). A WireGuard tunnel at the default MTU of
-1280 adds ~60-80 bytes of overhead and exceeds that limit, so WARP initialization
-timed out on the `/cdn-cgi/trace` verification even though registration and plain
-UDP worked. `config.json` therefore sets `"mtu": 1200`.
+Railway's container network has a path MTU of 1316 (1300-byte packets pass, 1328 fail).
+WireGuard adds 60-80 bytes, so full-size packets of a 1280-byte tunnel are dropped: the
+handshake works, but TLS and large transfers stall and WARP initialization times out.
 
-If WARP initialization still fails, try in `config.json`:
+- IPv4 inside the tunnel: `"stack": "ipv4"`, `"mtu": 1200` works (measured).
+- IPv6 inside the tunnel needs an MTU >= 1280, so `"tcp_mss": 1160` clamps the TCP MSS
+  (like iptables TCPMSS --clamp) to keep outer packets <= 1316.
 
-- a lower `warp.mtu` (e.g. 1100), or
-- `"stack": "ipv4"`.
+Current config: `"stack": "ipv6", "mtu": 1280, "tcp_mss": 1160`.
+Fallback if it does not start: `"stack": "ipv4", "mtu": 1200, "tcp_mss": 0`.
 
 At startup the entrypoint prints the effective WARP config and non-fatal network
-diagnostics (IPv4/IPv6 egress, UDP, path-MTU pings) to the logs. Set
-`WARP_NETWORK_DIAGNOSTICS=0` in Railway Variables to disable the diagnostics once
-everything works.
+diagnostics. Set `WARP_NETWORK_DIAGNOSTICS=0` in Railway Variables to disable them.
 
 The container intentionally does not request `NET_ADMIN`, create a TUN device,
 or change host routes.

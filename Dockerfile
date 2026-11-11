@@ -3,7 +3,7 @@ FROM golang:1.24-alpine AS build
 ARG REPO=https://github.com/johndoe237/opencode2api.git
 ARG REF=feat/warp-mtu
 # Change this value to force Docker/Railway to re-clone the fork (cache busting).
-ARG GIT_SHA=3246e10
+ARG GIT_SHA=1cff5e6
 RUN apk add --no-cache git
 WORKDIR /src
 RUN echo "expected fork commit: $GIT_SHA" \
